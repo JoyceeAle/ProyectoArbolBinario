@@ -3,14 +3,20 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.awt.event.ActionListener;
+import java.awt.event.*;
+import java.io.*;
+import java.util.LinkedList;
+import java.util.Queue;
 
 // Clase Nodo
 class Nodo {
     int valor;
     Nodo izquierda, derecha;
+    int altura;
 
     public Nodo(int valor) {
         this.valor = valor;
+        this.altura = 1;
         izquierda = derecha = null;
     }
 }
@@ -29,9 +35,95 @@ class ArbolBinario {
 
     private Nodo insertarRecursivo(Nodo nodo, int valor) {
         if (nodo == null) return new Nodo(valor);
-        if (valor < nodo.valor) nodo.izquierda = insertarRecursivo(nodo.izquierda, valor);
-        else if (valor > nodo.valor) nodo.derecha = insertarRecursivo(nodo.derecha, valor);
+
+        if (valor < nodo.valor) {
+            nodo.izquierda = insertarRecursivo(nodo.izquierda, valor);
+        } else if (valor > nodo.valor) {
+            nodo.derecha = insertarRecursivo(nodo.derecha, valor);
+        } else {
+            return nodo;
+        }
+
+        // Aquí actualizo la altura del árbol y lo actualizo tambien
+        nodo.altura = 1 + Math.max(obtenerAltura(nodo.izquierda), obtenerAltura(nodo.derecha));
+
+        return balancear(nodo);
+    }
+
+    private Nodo balancear(Nodo nodo) {
+        int balance = obtenerFactorDeBalance(nodo);
+
+        // Rotación simple a la derecha :)
+        if (balance > 1 && obtenerFactorDeBalance(nodo.izquierda) >= 0) {
+            return rotacionDerecha(nodo);
+        }
+
+        // Rotación simple a la izquierda :)
+        if (balance < -1 && obtenerFactorDeBalance(nodo.derecha) <= 0) {
+            return rotacionIzquierda(nodo);
+        }
+
+        // Rotación izquierda-derecha :)
+        if (balance > 1 && obtenerFactorDeBalance(nodo.izquierda) < 0) {
+            nodo.izquierda = rotacionIzquierda(nodo.izquierda);
+            return rotacionDerecha(nodo);
+        }
+
+        // Rotación derecha-izquierda :)
+        if (balance < -1 && obtenerFactorDeBalance(nodo.derecha) > 0) {
+            nodo.derecha = rotacionDerecha(nodo.derecha);
+            return rotacionIzquierda(nodo);
+        }
+
         return nodo;
+    }
+
+    // Rotación simple a la derecha
+    private Nodo rotacionDerecha(Nodo y) {
+        Nodo x = y.izquierda;
+        Nodo T2 = x.derecha;
+
+        // Se realiza la rotación
+        x.derecha = y;
+        y.izquierda = T2;
+
+        // Se actualizan las alturas
+        y.altura = Math.max(obtenerAltura(y.izquierda), obtenerAltura(y.derecha)) + 1;
+        x.altura = Math.max(obtenerAltura(x.izquierda), obtenerAltura(x.derecha)) + 1;
+
+        return x; // Se genera la nueva raíz
+    }
+
+    // Rotación simple a la izquierda
+    private Nodo rotacionIzquierda(Nodo x) {
+        Nodo y = x.derecha;
+        Nodo T2 = y.izquierda;
+
+        // Se realizar la rotación
+        y.izquierda = x;
+        x.derecha = T2;
+
+        // Se actualizan las alturas
+        x.altura = Math.max(obtenerAltura(x.izquierda), obtenerAltura(x.derecha)) + 1;
+        y.altura = Math.max(obtenerAltura(y.izquierda), obtenerAltura(y.derecha)) + 1;
+
+        return y; // Se genera la nueva raíz
+    }
+
+    // Esta función sirve para poder obtener la altura de un nodo
+    private int obtenerAltura(Nodo nodo) {
+        if (nodo == null) {
+            return 0;
+        }
+        return nodo.altura;
+    }
+
+    // Y esta función para obtener el factor de balance de un nodo
+    private int obtenerFactorDeBalance(Nodo nodo) {
+        if (nodo == null) {
+            return 0;
+        }
+        return obtenerAltura(nodo.izquierda) - obtenerAltura(nodo.derecha);
     }
 
     public List<Integer> recorridoPreOrden() {
@@ -85,12 +177,14 @@ class ArbolBinario {
         if (valor < nodo.valor) nodo.izquierda = eliminarRecursivo(nodo.izquierda, valor);
         else if (valor > nodo.valor) nodo.derecha = eliminarRecursivo(nodo.derecha, valor);
         else {
+            if(nodo.izquierda == null && nodo.derecha == null) return null;
             if (nodo.izquierda == null) return nodo.derecha;
             if (nodo.derecha == null) return nodo.izquierda;
             nodo.valor = encontrarMinimo(nodo.derecha);
             nodo.derecha = eliminarRecursivo(nodo.derecha, nodo.valor);
         }
-        return nodo;
+        nodo.altura = 1 + Math.max(obtenerAltura(nodo.izquierda), obtenerAltura(nodo.derecha));
+        return balancear(nodo);
     }
 
     private int encontrarMinimo(Nodo nodo) {
